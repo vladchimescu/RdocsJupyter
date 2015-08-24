@@ -1,0 +1,8 @@
+Package: RdocsJupyter
+Title: A utility for postprocessing of Rmd, knitr and Sweave docs
+Description: Facilitates conversion of R documentation to Jupyter notebooks
+Version: 0.99.0
+Author: Vladislav Kim <vkim@embl.de>
+Maintainer: Vladislav Kim <vkim@embl.de>
+Depends: R>=3.0.1
+License: GNU General Public License
