@@ -1,0 +1,58 @@
+# Conversion of Bioconductor vignettes into Jupyter notebook format
+## 1. Introduction
+Write something about Ipython notebooks and Jupyter format.
+Make an analogy to interactive learning on codeacademy. The popularity of Codeacademy and codeschool like interactive tutorials, which take you step by step through the introductory material to programming inspired a similar format for software documentation. 
+The two most common formats in which Bioconductor vignettes are written are R Markdown and Rnw-Sweave. 
+
+## 2. R Markdown to Jupyter
+The converison of R markdown (Rmd) documentation is straightforward. The process involves [**notedown**](https://github.com/aaren/notedown.git), available on GitHub, a utility that allows conversion of Markdown files into Jupyter notebook format. The current version of [**notedown**](https://github.com/aaren/notedown.git) supports the direct conversion of R markdown to Jupyter notebook format. With [**notedown**](https://github.com/aaren/notedown.git) simply run in bash
+
+```
+$ notedown -o output.ipynb --nomagic input.Rmd
+
+```
+Or alternatively:
+```
+$ notedown input.Rmd --knit --nomagic > output.ipynb
+```
+The `--nomagic` flag suppresses `%%R` prefix tags in code blocks necessary for running R code with the native Python kernel and [**rpy2**](http://rpy.sourceforge.net/rpy2.html) Python package. Thus if you don't have [**R kernel**](https://github.com/IRkernel/IRkernel.git) you should leave out the `--nomagic` flag and import [**rpy2**](http://rpy.sourceforge.net/rpy2.html).
+After converting the Rmd vignette into Jupyter notebook, the last step would be to switch to the [**R kernel**](https://github.com/IRkernel/IRkernel.git) in the notebook interface. Thus run 
+```
+$ ipython notebook output.ipynb
+```
+This opens the notebook in your browser. Click on **Kernel** tab -> **Change kernel** -> **R**.
+
+## 3. Conversion of Sweave vignettes
+The conversion of Rnw vignettes is somewhat more complicated, since Sweave vignettes contain both TeX and R syntax.
+
++ *Step 1*: Produce a TeX file using `Sweave()` function. Run in R
+```
+> options(prompt=" ", continue=" ")
+> Sweave("vignette.Rnw", eval=FALSE)
+```
+The `options(...)` command overwrites the default `options(prompt=">", continue="+")` for prepending ">" in the beginning of each line and "+" for line continuation.
+
++ *Step 2*: In the produced TeX file comment out the usage of Sweave.sty and add **listings** package instead:
+```
+%\usepackage{Sweave}
+\usepackage{listings}
+```
+and remove instances of `\begin{Schunk}` and `\end{Schunk}`. Replace all `{Sinput}` environment with `{lstlisting}`. Replace all Biconductor.sty macros, e.g.~`\R{}` or `\Robj{}`, with corresponding values. It is also recommended to remove all floats in the TeX file (such as `{figure}` environment)
+
++ *Step 3*: Convert the postprocessed TeX file into a markdown file with [**pandoc**](http://pandoc.org/). Run in bash:
+```
+$ pandoc input.tex -o output.md
+```
++ *Step 4*: The markdown file can be easily converted to Jupyter format with notedown:
+```
+$ notedown -o output.ipynb --nomagic input.md
+```
+## 4. knitr Vignettes
+To suppress output and overcomplicated code highlighting in knitr-generated documentation, the following options have to be set in R:
+```
+> knitr::opts_chunk$set(results = "hide", highight = FALSE)
+```
+The output evaluated is hidden due to `results = "hide"` and the code chunks are enclosed in simple **verbatim** LaTeX environment. The directions for knitting the knitr-TeX vignette are usually provided in the opening comments. In most cases the following would knit the vignette:
+```
+> library('knitr'); rm(list=ls()); knit('vignette.Rnw')
+```

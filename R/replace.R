@@ -24,6 +24,10 @@ replaceEnv <- function(filename) {
   # right now don't know how to distinguish simple verbatim from
   # verbatim-enclosed code
   text <- gsub("{verbatim}", "{lstlisting}", text, fixed=TRUE)
+  text <- gsub("\bioccoment", "", text, fixed=TRUE)
+  text <- gsub("\warning", "", text, fixed=TRUE)
+  text <- gsub("\fixme", "", text, fixed=TRUE)
+  text <- gsub("\prefix", "", text, fixed=TRUE)
   writeLines(text, con=filename, sep = "\n")
 }
 
@@ -36,6 +40,9 @@ replaceMacros <- function(filename) {
   text <- gsub("\\R{}", "R ", text, fixed=TRUE)
   text <- gsub("Biocpkg", "emph", text, fixed=TRUE)
   text <- gsub("CRANpkg", "emph", text, fixed = TRUE)
+  text <- gsub("Githubpkg", "emph", text, fixed=TRUE)
+  text <- gsub("Biocannopkg", "emph", text, fixed=TRUE)
+  text <- gsub("Biocexptpkg", "emph", text, fixed=TRUE)
   text <- gsub("Robject", "texttt", text)
   text <- gsub("Rfunction", "texttt", text)
   text <- gsub("Rclass", "textbf", text)
@@ -51,11 +58,12 @@ removeFigures <- function(filename) {
   text <- readLines(file.path(getwd(), filename))
   text <- deleteBetween("\\\\begin\\{figure\\}", "\\\\end\\{figure\\}", text)
   # text <- gsub("(\\\\begin\\{figure\\})(.*?)(\\\\end\\{figure\\})", "", text)
+  text <- gsub("\\incfig((.|\n)*+)", "\\emph\\{Caption:", text, perl = TRUE)
   writeLines(text, con=filename, sep = "\n")
 }
 
 # deletes everything between start and end points
-# of the environment. Start and end have to be
+# of the TeX environment. Start and end have to be
 # regexp that can be passed to grep() function
 deleteBetween <- function(start, end, text) {
   start_indices <- grep(start, text)
