@@ -21,7 +21,7 @@ openFile <- function(pkg, dir) {
   }
 }
 
-packageList <- function(pkg, dir=getwd()) {
+getDependencies <- function(pkg, dir=getwd()) {
  if(missing(pkg)) {
      message(paste("Searching for DESCRIPTION file in\n", dir, "\n"))
  }
@@ -47,3 +47,19 @@ packageList <- function(pkg, dir=getwd()) {
     }
   ) # end of tryCatch()
 } # end of packageList() function
+
+
+produceDockerfile <- function(dirc, vignette) {
+  pkgs <- getDependencies(dir = dirc)
+  text <- paste("source('http://bioconductor.org/biocLite.R')\npkgs <- c(", 
+      paste(shQuote(pkgs, type="cmd"), collapse=", "), ")\nbiocLite(pkgs)")
+  write(text, file="packages.R")
+  text <- paste("FROM vladkim/ipynb:latest",
+                "\nCOPY packages.R ./",
+                "\nRUN R < packages.R --no-save && rm packages.R",
+                "\nCOPY ", vignette, " ./", sep="")
+  write(text, file="Dockerfile")
+  
+}
+
+

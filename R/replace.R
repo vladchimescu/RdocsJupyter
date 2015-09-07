@@ -24,10 +24,10 @@ replaceEnv <- function(filename) {
   # right now don't know how to distinguish simple verbatim from
   # verbatim-enclosed code
   text <- gsub("{verbatim}", "{lstlisting}", text, fixed=TRUE)
-  text <- gsub("\bioccoment", "", text, fixed=TRUE)
-  text <- gsub("\warning", "", text, fixed=TRUE)
-  text <- gsub("\fixme", "", text, fixed=TRUE)
-  text <- gsub("\prefix", "", text, fixed=TRUE)
+  text <- gsub("\\bioccoment", "", text, fixed=TRUE)
+  text <- gsub("\\warning", "", text, fixed=TRUE)
+  text <- gsub("\\fixme", "", text, fixed=TRUE)
+  text <- gsub("\\prefix", "", text, fixed=TRUE)
   writeLines(text, con=filename, sep = "\n")
 }
 
