@@ -1,35 +1,25 @@
 # error message
 e <- "No DESCRIPTION file in current directory\n"
 w <- "You need to provide a valid path of the directory 
-with the DESCRIPTION file or provide the name 
-of the package installed on your system"
-openFile <- function(pkg, dir) {
+with the DESCRIPTION file of the package"
+openFile <- function(dir) {
   if(file.exists(file.path(dir, "DESCRIPTION"))) {
     deps <- read.dcf(file = file.path(dir, "DESCRIPTION"), 
                      fields = c("Depends", "Suggests",
                                 "Imports", "LinkingTo"))
     return(deps)
   }
-  else if (file.exists(system.file("DESCRIPTION", package = pkg))) {
-    deps <- read.dcf(file = system.file("DESCRIPTION", package = toString(pkg)), 
-                     fields = c("Depends", "Suggests",
-                                "Imports", "LinkingTo"))
-    return(deps)
-  }
+
   else {
     stop(e)
   }
 }
 
-getDependencies <- function(pkg, dir=getwd()) {
- if(missing(pkg)) {
-     message(paste("Searching for DESCRIPTION file in\n", dir, "\n"))
- }
- if(missing(dir) & !missing(pkg)) {
-    message(paste("Searching DESCRIPTION file in\n", pkg, "package lib directory\n"))
- }
+getDependencies <- function(dir) {
+ message(paste("Searching for DESCRIPTION file in\n", dir, "\n"))
+
  tryCatch(
-    { deps <- openFile(pkg, dir)
+    { deps <- openFile(dir)
       dim(deps) <- NULL
       deps <- paste(deps[!is.na(deps)], seps = "", collapse = ",")
       deps <- gsub("\\n", " ", deps)
@@ -49,7 +39,15 @@ getDependencies <- function(pkg, dir=getwd()) {
 } # end of packageList() function
 
 
-produceDockerfile <- function(dirc, vignette) {
+produceDockerfile <- function(dirc = getwd(), vignette) {
+  if(missing(dirc)) {
+    dirc <- getwd()
+  }
+  if(missing(vignette)) {
+    stop("Error: please check the provided arguments 'dirc' and 'vignette'.
+         'dirc' has to be the path to the DESCRIPTION file and the vignette
+         'vignette' is the name of the vignette file")
+  }
   pkgs <- getDependencies(dir = dirc)
   text <- paste("source('http://bioconductor.org/biocLite.R')\npkgs <- c(", 
       paste(shQuote(pkgs, type="cmd"), collapse=", "), ")\nbiocLite(pkgs)")
