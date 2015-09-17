@@ -1,28 +1,90 @@
-# Conversion of Bioconductor vignettes into Jupyter notebook format
-## 1. Introduction
-Write something about Ipython notebooks and Jupyter format.
-Make an analogy to interactive learning on codeacademy. The popularity of Codeacademy and codeschool like interactive tutorials, which take you step by step through the introductory material to programming inspired a similar format for software documentation. 
-The two most common formats in which Bioconductor vignettes are written are R Markdown and Rnw-Sweave. 
+---
+title: "Interactive Software Documentation with Jupyter notebooks"
+author: Vladislav Kim
+email: vkim@embl.de
+date: "`r doc_date()`"
+output: BiocStyle::html_document
+graphics: yes
+vignette: >
+  %\VignetteIndexEntry{Interactive Software Documentation with Jupyter notebooks}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}  
+---
+# Introduction
+The [**Jupyter notebook**](https://jupyter.org/) is an interactive environment for code evaluation, exploratory data analysis and reporting. In a notebook file it is possible to combine Markdown, program code as well as its output in corresponding input and output cells. 
 
-## 2. R Markdown to Jupyter
-The converison of R markdown (Rmd) documentation is straightforward. The process involves [**notedown**](https://github.com/aaren/notedown.git), available on GitHub, a utility that allows conversion of Markdown files into Jupyter notebook format. The current version of [**notedown**](https://github.com/aaren/notedown.git) supports the direct conversion of R markdown to Jupyter notebook format. With [**notedown**](https://github.com/aaren/notedown.git) simply run in bash
+
+The primary motivation for using Jupyter notebooks is the ease of producing technical reports, software documentation, tutorials, etc, as the code snippets can be included directly in the document and the output is produced on the fly. This feature may draw comparisons to Markdown, but the main advantage of Jupyter notebooks is that notebook files do not require compilation: in order to view the output, one doesn't have to "knit" the whole document every time.
+
+
+Normally Jupyter notebook files are not distributed per se. Instead, notebook files are converted to static formats, most commonly HTML. An often overlooked potential of Jupyter notebooks rests in the format's dynamic, interactive nature. The prospect of distributing "live" Jupyter notebooks opens the possibility of truly interactive document types suitable for tutorials and demonstrations. 
+
+
+Historically the Notebook application was introduced in IPython back in 2011. The Notebook app has evolved to support most of the commonly used programming languages and was renamed to Jupyter in 2014. In this vignette, the terms Jupyter and IPython notebook will be used interchangeably. However, note that user commands and interface descriptions refer to [**IPython Notebook 3.2.1**](https://ipython.org/ipython-doc/3/notebook/index.html)
+
+
+# Distribution of Jupyter Notebooks
+## Docker Images and Docker Hub
+The IPython pipeline is notoriously difficult to install on certain operating systems. To facilitate the distribution of Jupyter notebooks, the use of [**Docker**](https://www.docker.com/) virtualization environment is suggested. Docker provides the system of images and containers for running applications in a Linux-like environment without the need of full virtualization.
+
+
+The [**base Docker image**](https://hub.docker.com/r/vladkim/ipynb/) for IPython toolset can be found in the registry of [**Docker Hub**](https://hub.docker.com/) under the repository name: **vladkim/ipynb**. Essentially, this base image contains all the dependencies required for running IPython notebook together with the [**R kernel**](https://github.com/IRkernel/IRkernel). 
+
+
+The [**ipynb base image**](https://hub.docker.com/r/vladkim/ipynb/) was used to build a Docker image for the [**Bioconductor RNA-seq workflow**](http://www.bioconductor.org/help/workflows/rnaseqGene/) in IPython notebook format. On Docker Hub the image of the RNA-seq workflow is listed as [**vladkim/rnaseq**](https://hub.docker.com/r/vladkim/rnaseq/).
+
+
+Note that in the base image IPython Notebook application is used and not Jupyter. There is a subtle difference between the two, since the announcement of the ["Big Split"](https://blog.jupyter.org/2015/04/15/the-big-split/) in April, 2015. The Jupyter notebook has diverged little from its original, but enough to cause problems, which is why the putatively more stable IPython Notebook is used for the time being.
+
+## Aesthetics and Usability of Notebooks
+Even though inline CSS and JavaScript declarations are ignored in IPython Notebook 3.\* series, it is possible to change the default appearance of the notebook application using `custom.css` and `custom.js` files in ~/ipython/profile_default/static/custom/ directory. 
+
+![screen](../data/screen.png)
+
+
+The `custom.css` file used for styling IPython notebook in the base Docker image is available on [GitHub](https://github.com/vladchimescu/Docker-images).
+
+
+In addition to the custom CSS theme, the IPython notebook in the base Docker image loads a JavaScript extension ["Breakpoints"](https://github.com/ipython-contrib/IPython-notebook-extensions/wiki/Breakpoints) to enhance code execution options. The JavaScript notebook extension ["Breakpoints"](https://github.com/ipython-contrib/IPython-notebook-extensions/wiki/Breakpoints) adds the following tool bar:
+![breakpoints](../data/breakpoints.png)
+
+Since there is no implicit caching of environmental variables, function and object definitions, upon restart of the notebook each cell has to be run up to the point where the reader has stopped. By default in IPython notebook only one code cell can be run at a time. Using the "Breakpoints" toolbar one can run "from top to current cell" (second from left) or set a breakpoint, i.e. a bookmark, and run from the first cell until the next bookmark is encountered.
+
+## Creating Your Own Docker Image
+
+
+# Conversion to IPython Notebook Format
+## R Markdown to Jupyter
+To convert documentation in R Markdown into Jupyter notebook format, use the CRAN package [**rmarkdown**](https://cran.r-project.org/web/packages/rmarkdown/index.html) first to render the .Rmd file into Markdown Github:
+```{r rmd1, eval=FALSE}
+library(rmarkdown)
+render("vignette.Rmd", md_document(variant = "markdown_github"))
+```
+
+If your documentation contains typeset math in LaTeX notation, run instead
+```{r rmd2, eval=FALSE}
+render("vignette.Rmd", md_document(variant = "markdown_github+tex_math_dollars"))
+```
+
+The pandoc extension `+tex_math_dollars` ensures that the LaTeX math is typeset correctly in markdown. 
+
+
+Next use [**notedown**](https://github.com/aaren/notedown.git) to convert the produced Markdown file into Jupyter notebook format. With [**notedown**](https://github.com/aaren/notedown.git) simply run in bash
 
 ```
-$ notedown -o output.ipynb --nomagic input.Rmd
+$ notedown -o output.ipynb --nomagic input.md
 
 ```
-Or alternatively:
-```
-$ notedown input.Rmd --knit --nomagic > output.ipynb
-```
-The `--nomagic` flag suppresses `%%R` prefix tags in code blocks necessary for running R code with the native Python kernel and [**rpy2**](http://rpy.sourceforge.net/rpy2.html) Python package. Thus if you don't have [**R kernel**](https://github.com/IRkernel/IRkernel.git) you should leave out the `--nomagic` flag and import [**rpy2**](http://rpy.sourceforge.net/rpy2.html).
+The `--nomagic` flag suppresses `%%R` prefix tags in code blocks necessary for running R code with the native Python kernel. 
 After converting the Rmd vignette into Jupyter notebook, the last step would be to switch to the [**R kernel**](https://github.com/IRkernel/IRkernel.git) in the notebook interface. Thus run 
 ```
 $ ipython notebook output.ipynb
 ```
-This opens the notebook in your browser. Click on **Kernel** tab -> **Change kernel** -> **R**.
+This will open the notebook in your browser. Click on **Kernel** tab -> **Change kernel** -> **R**.
 
-## 3. Conversion of Sweave vignettes
+The current version of [**notedown**](https://github.com/aaren/notedown.git) supports the direct conversion of R markdown to Jupyter notebook format. However, it is recommended to render R Markdown into `markdown_github` before applying [**notedown**](https://github.com/aaren/notedown.git)
+
+## Conversion of Sweave vignettes
 The conversion of Rnw vignettes is somewhat more complicated, since Sweave vignettes contain both TeX and R syntax.
 
 + *Step 1*: Produce a TeX file using `Sweave()` function. Run in R
@@ -47,7 +109,8 @@ $ pandoc input.tex -o output.md
 ```
 $ notedown -o output.ipynb --nomagic input.md
 ```
-## 4. knitr Vignettes
+
+## knitr Vignettes
 To suppress output and overcomplicated code highlighting in knitr-generated documentation, the following options have to be set in R:
 ```
 > knitr::opts_chunk$set(results = "hide", highight = FALSE)
