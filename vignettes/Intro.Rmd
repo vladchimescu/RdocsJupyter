@@ -78,7 +78,7 @@ $ docker build -t username/example .
 Don't forget the dot after the image name, which signifies the Dockerfile is in the current directory.
  
 
-# Conversion to IPython Notebook Format
+# Conversion of Bioconductor Vignettes
 Most of the existing R documentation is written using R markdown, [**knitr**](https://cran.r-project.org/web/packages/knitr/index.html) or [**Sweave**](https://www.statistik.lmu.de/~leisch/Sweave/). An important usability criterion for package authors would be the ease of conversion of static formats into Jupyter notebook format. The prerequisites for such document conversions would be [**pandoc**](http://pandoc.org/) and [**notedown**](https://github.com/aaren/notedown.git). The most straightforward type of conversion is from Markdown to Jupyter notebook, which can be achieved with the notedown utility available on GitHub. The LaTeX-like vignettes written with knitr or Sweave need to be converted to Markdown with pandoc before the final conversion to .ipynb takes place.
 
 ## R Markdown to Jupyter
@@ -114,7 +114,7 @@ The current version of [**notedown**](https://github.com/aaren/notedown.git) sup
 ## Conversion of Sweave vignettes
 The conversion of Rnw vignettes is somewhat more complicated, since Sweave vignettes contain TeX syntax. Produce a TeX file using `Sweave()` function. Run in R
 ```{r sweave, eval=FALSE}
- options(prompt="", continue="")
+ options(prompt=" ", continue=" ")
  Sweave("vignette.Rnw", eval=FALSE)
 ```
 The `options(...)` command overwrites the default `options(prompt="> ", continue="+ ")` for prepending ">" in the beginning of each line and "+" for line continuation. These signs have to be removed for the code in notebook cells to be runnable. 
@@ -138,8 +138,75 @@ $ notedown -o output.ipynb --nomagic input.md
 ```
 
 ## knitr Vignettes
-To suppress output and overcomplicated code highlighting in knitr-generated documentation, the following options have to be set in R before the vignette is knit:
+To suppress output and code highlighting in knitr-generated documentation, the following options have to be set in R before the vignette is knit:
+```{r codecunks, eval = FALSE}
+knitr::opts_chunk$set(results = "hide", highlight = FALSE)
 ```
-> knitr::opts_chunk$set(results = "hide", highight = FALSE)
+After the vignette was knit to produce a .tex file, you can run `processTex` function just like for Sweave vignettes:
+
+```{r process2, eval = FALSE}
+ library(RdocsJupyter)
+ processTex("vignette.tex")
 ```
-The output evaluated is hidden due to `results = "hide"` and the code chunks are enclosed in simple **verbatim** LaTeX environment. 
+
+Convert the postprocessed TeX file into a markdown file with [**pandoc**](http://pandoc.org/):
+```
+$ pandoc input.tex -o output.md
+```
+The markdown file can be easily converted to Jupyter format with notedown:
+
+```
+$ notedown -o output.ipynb --nomagic input.md
+```
+
+## General Advice
+
+The recommendations given in the preceding sections were gathered based on some case studies of Bioconductor package vignette conversions to Jupyter Notebook format. As already pointed out, the process of conversion is limited by the pandoc's ability to handle user-defined environments and commands in LaTeX, therefore some preprocessing of TeX files is required prior to conversion with pandoc. Thus if you are using a custom-written LaTeX style file, you will have to check if all of your LaTeX commands and environments are rendered by pandoc.
+
+
+Note that in pandoc there are a number of useful options that can help the vignette author avoid unnecessary work. For example, to get rid of the so called header identifiers, additional tags in braces appended to some section headers in TeX $\Rightarrow$ Markdown conversion, use `markdown_github` flavor or the `-header_attributes` ("*minus* header attributes") extension with pandoc markdown, i.e.
+
+```
+$ pandoc --to=markdown_github+tex_math_dollars vignette.tex -o vignette.md
+## convert to markdown GitHub "plus" TeX-style math
+```
+
+or
+
+```
+$ pandoc --to=markdown-header_attributes vignette.tex -o vignette.md
+## convert to markdown "minus" header attriubtes
+```
+
+Note how extensions are explicitly added with '+' or removed with '-' and simply concatenated with the target format, in this case markdown_github and markdown, respectively.
+
+
+To generate the table of contents with pandoc:
+
+```
+$ pandoc -s --toc --to=markdown-header_attributes vignette.tex -o vignette.md
+```
+
+
+The function `render` from the **rmarkdown** package uses pandoc as well. Hence pandoc extensions can be specified in `md_document(variant = ...)` function as discussed in section 3.1.
+
+# Current Limitations
+## Docker Bugs
+
+
+## R Kernel Issues
+
+
+## Outlook
+
+
+
+
+
+
+
+
+
+
+
+

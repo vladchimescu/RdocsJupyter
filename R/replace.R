@@ -24,6 +24,7 @@ replaceEnv <- function(filename) {
   # right now don't know how to distinguish simple verbatim from
   # verbatim-enclosed code
   text <- gsub("{verbatim}", "{lstlisting}", text, fixed=TRUE)
+  text <- gsub("{alltt}", "{lstlisting}", text, fixed=TRUE)
   text <- gsub("\\bioccoment", "", text, fixed=TRUE)
   text <- gsub("\\warning", "", text, fixed=TRUE)
   text <- gsub("\\fixme", "", text, fixed=TRUE)

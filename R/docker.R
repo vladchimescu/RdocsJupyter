@@ -6,7 +6,7 @@ openFile <- function(dir) {
   if(file.exists(file.path(dir, "DESCRIPTION"))) {
     deps <- read.dcf(file = file.path(dir, "DESCRIPTION"), 
                      fields = c("Depends", "Suggests",
-                                "Imports", "LinkingTo"))
+                                "Imports", "LinkingTo", "Package"))
     return(deps)
   }
 
@@ -51,12 +51,12 @@ produceDockerfile <- function(dirc = getwd(), vignette) {
   pkgs <- getDependencies(dir = dirc)
   text <- paste("source('http://bioconductor.org/biocLite.R')\npkgs <- c(", 
       paste(shQuote(pkgs, type="cmd"), collapse=", "), ")\nbiocLite(pkgs)")
-  write(text, file="packages.R")
+  write(text, file=paste(dirc, "packages.R", sep = ""))
   text <- paste("FROM vladkim/ipynb:latest",
                 "\nCOPY packages.R ./",
                 "\nRUN R < packages.R --no-save && rm packages.R",
                 "\nCOPY ", vignette, " ./", sep="")
-  write(text, file="Dockerfile")
+  write(text, file=paste(dirc, "Dockerfile", sep = ""))
   
 }
 
