@@ -14,30 +14,42 @@ vignette: >
 The [**Jupyter notebook**](https://jupyter.org/) is an interactive environment for code evaluation, exploratory data analysis and reporting. In a notebook file it is possible to combine Markdown, program code as well as its output in corresponding input and output cells. 
 
 
-The primary motivation for using Jupyter notebooks is the ease of producing technical reports, software documentation, tutorials, etc, as the code snippets can be included directly in the document and the output is produced on the fly. This feature may draw comparisons to Markdown, but the main advantage of Jupyter notebooks is that notebook files do not require compilation: in order to view the output, one doesn't have to "knit" the whole document every time.
+The primary motivation for using Jupyter notebooks is the ease of producing technical reports, software documentation, tutorials, etc, as the code fragments can be included directly in the document and the output is produced simultaneously. This feature may draw comparisons to Markdown, but the main advantage of Jupyter notebooks is that notebook files do not require compilation: in order to view the output, one doesn't have to "knit" the whole document every time.
 
 
 Normally Jupyter notebook files are not distributed per se. Instead, notebook files are converted to static formats, most commonly HTML. An often overlooked potential of Jupyter notebooks rests in the format's dynamic, interactive nature. The prospect of distributing "live" Jupyter notebooks opens the possibility of truly interactive document types suitable for tutorials and demonstrations. 
 
 
-Historically the Notebook application was introduced in IPython back in 2011. The Notebook app has evolved to support most of the commonly used programming languages and was renamed to Jupyter in 2014. In this vignette, the terms Jupyter and IPython notebook will be used interchangeably. However, note that user commands and interface descriptions refer to [**IPython Notebook 3.2.1**](https://ipython.org/ipython-doc/3/notebook/index.html)
+Historically the Notebook application was introduced in IPython in 2011. The Notebook app has evolved to support most of the commonly used programming languages and was renamed to Jupyter in 2014. In this vignette, the terms Jupyter and IPython notebook will be used interchangeably. However, note that the user commands and interface descriptions refer to [**IPython Notebook 3.2.1**](https://ipython.org/ipython-doc/3/notebook/index.html)
 
 
 # Distribution of Jupyter Notebooks
 ## Docker Images and Docker Hub
-The IPython pipeline is notoriously difficult to install on certain operating systems. To facilitate the distribution of Jupyter notebooks, the use of [**Docker**](https://www.docker.com/) virtualization environment is suggested. Docker provides the system of images and containers for running applications in a Linux-like environment without the need of full virtualization.
+The IPython pipeline is notoriously difficult to install on certain operating systems. To facilitate the distribution of Jupyter notebooks, the use of [**Docker**](https://www.docker.com/) virtualization environment is suggested. Docker provides a system of images and containers for running applications in a Linux-like environment without the need of full virtualization.
 
 
 The [**base Docker image**](https://hub.docker.com/r/vladkim/ipynb/) for IPython toolset can be found in the registry of [**Docker Hub**](https://hub.docker.com/) under the repository name: **vladkim/ipynb**. Essentially, this base image contains all the dependencies required for running IPython notebook together with the [**R kernel**](https://github.com/IRkernel/IRkernel). 
 
 
-The [**ipynb base image**](https://hub.docker.com/r/vladkim/ipynb/) was used to build a Docker image for the [**Bioconductor RNA-seq workflow**](http://www.bioconductor.org/help/workflows/rnaseqGene/) in IPython notebook format. On Docker Hub the image of the RNA-seq workflow is listed as [**vladkim/rnaseq**](https://hub.docker.com/r/vladkim/rnaseq/).
+
+The strategy for distribution of Jupyter notebooks with Docker can be described as follows: 
+
++ the base image [**vladkim/ipynb**](https://hub.docker.com/r/vladkim/ipynb/) forms the foundation and provides IPython Notebook, R kernel and R installation
++ a **single** vignette is deposited in the working directory of the image. We use one image for each vignette to make images compact in terms of download size.
++ R package dependencies are installed on top of the base image
++ The image is built and pushed to [**Docker Hub**](https://hub.docker.com/)
 
 
-Note that in the base image IPython Notebook application is used and not Jupyter. There is a subtle difference between the two, since the announcement of the ["Big Split"](https://blog.jupyter.org/2015/04/15/the-big-split/) in April, 2015. The Jupyter notebook has diverged little from its original, but enough to cause certain issues, which is why the arguably more stable IPython Notebook is used for the time being.
+As described in subsection 2.3 all of these 4 steps are carried out by a simple function `produceDockerfile`, provided that you have your package vignette (or workflow) in Jupyter notebook format. 
+
+
+*Example:* [**Bioconductor RNA-seq workflow**](http://www.bioconductor.org/help/workflows/rnaseqGene/) was converted to IPython notebook format and subsequently dockerized. On Docker Hub the image of the RNA-seq workflow is listed as [**vladkim/rnaseq**](https://hub.docker.com/r/vladkim/rnaseq/).
+
+
+Note that in the base image IPython Notebook application is used and not Jupyter. There is a subtle difference between the two since the announcement of the ["Big Split"](https://blog.jupyter.org/2015/04/15/the-big-split/) in April, 2015. The Jupyter notebook has diverged little from its original, but enough to cause certain issues, which is why the arguably more stable IPython Notebook is used for the time being.
 
 ## Aesthetics and Usability of Notebooks
-Even though inline CSS and JavaScript declarations are ignored in IPython Notebook 3.\* series, it is possible to change the default appearance of the notebook application using `custom.css` and `custom.js` files in **~/ipython/profile_default/static/custom/** directory. Using this entry point for styling, the default notebook theme and typography settings were overwritten in the base Docker image as well as in images deriving from the base image (e.g. [vladkim/rnaseq](https://hub.docker.com/r/vladkim/rnaseq/))
+Even though inline CSS and JavaScript declarations are ignored in IPython Notebook 3.\* series, it is possible to change the default appearance of the notebook application using `custom.css` and `custom.js` files in **~/ipython/profile_default/static/custom/** directory. Using this entry point for styling, the default notebook theme and typography settings were overwritten in the base Docker image as well as in its descendant images (e.g. [vladkim/rnaseq](https://hub.docker.com/r/vladkim/rnaseq/))
 
 ![screen](../data/screen.png)
 
@@ -71,18 +83,18 @@ COPY vignette.ipynb ./
 The `produceDockerfile` function also  extracts dependencies from the DESCRIPTION file and generates the **packages.R** script to install these dependencies on top of the base image **vladkim/ipynb**.
 
 
+If you don't have a DESCRIPTION file, you can simply list all your dependencies in a text file in the **Depends:** field. Make sure you name the file DESCRIPTION, as this is the file that `produceDockerfile` is searching for.
+
 In order to build your Docker image, simply run in the directory containing the Dockerfile
 ```
 $ docker build -t username/example .
 ``` 
-Don't forget the dot after the image name, which signifies the Dockerfile is in the current directory.
- 
 
 # Conversion of Bioconductor Vignettes
 Most of the existing R documentation is written using R markdown, [**knitr**](https://cran.r-project.org/web/packages/knitr/index.html) or [**Sweave**](https://www.statistik.lmu.de/~leisch/Sweave/). An important usability criterion for package authors would be the ease of conversion of static formats into Jupyter notebook format. The prerequisites for such document conversions would be [**pandoc**](http://pandoc.org/) and [**notedown**](https://github.com/aaren/notedown.git). The most straightforward type of conversion is from Markdown to Jupyter notebook, which can be achieved with the notedown utility available on GitHub. The LaTeX-like vignettes written with knitr or Sweave need to be converted to Markdown with pandoc before the final conversion to .ipynb takes place.
 
 ## R Markdown to Jupyter
-To convert documentation in R Markdown into Jupyter notebook format, use the CRAN package [**rmarkdown**](https://cran.r-project.org/web/packages/rmarkdown/index.html) first to render the .Rmd file into Markdown Github:
+To convert documentation in R Markdown into Jupyter notebook format, use the CRAN package [**rmarkdown**](https://cran.r-project.org/web/packages/rmarkdown/index.html) to render the .Rmd file into Markdown Github:
 ```{r rmd1, eval=FALSE}
 library(rmarkdown)
 render("vignette.Rmd", md_document(variant = "markdown_github"))
@@ -93,7 +105,7 @@ If your documentation contains typeset math in LaTeX notation, run instead
 render("vignette.Rmd", md_document(variant = "markdown_github+tex_math_dollars"))
 ```
 
-The pandoc extension `+tex_math_dollars` ensures that the LaTeX math is typeset correctly in markdown. For a comprehensive list of pandoc-TeX extensions please refer to the following [**link**](http://pandoc.org/demo/example9/pandocs-markdown.html). These extensions can be added to or removed from the output file explicitly with the '+' and '-' signs.
+The pandoc extension `+tex_math_dollars` ensures that the LaTeX math is typeset correctly in markdown. For a comprehensive list of pandoc-TeX extensions please refer to the following [**link**](http://pandoc.org/demo/example9/pandocs-markdown.html). These extensions can be added to or removed from the target file format explicitly with the '+' and '-' signs.
 
 
 Next use [**notedown**](https://github.com/aaren/notedown.git) to convert the produced Markdown file into Jupyter notebook format. With [**notedown**](https://github.com/aaren/notedown.git) simply run in bash
@@ -109,7 +121,7 @@ $ ipython notebook output.ipynb
 ```
 This will open the notebook in your browser. Click on **Kernel** tab -> **Change kernel** -> **R** and save the notebook.
 
-The current version of [**notedown**](https://github.com/aaren/notedown.git) supports the direct conversion of R markdown to Jupyter notebook format. However, it is recommended to render R Markdown into `markdown_github` before applying [**notedown**](https://github.com/aaren/notedown.git)
+The current version of [**notedown**](https://github.com/aaren/notedown.git) supports the direct conversion of R markdown to Jupyter notebook format. However, it is recommended to render R Markdown into `markdown_github` before applying [**notedown**](https://github.com/aaren/notedown.git). This becomes important (almost inevitable), if you include your bibliography as a BibTeX file.
 
 ## Conversion of Sweave vignettes
 The conversion of Rnw vignettes is somewhat more complicated, since Sweave vignettes contain TeX syntax. Produce a TeX file using `Sweave()` function. Run in R
@@ -164,7 +176,7 @@ $ notedown -o output.ipynb --nomagic input.md
 The recommendations given in the preceding sections were gathered based on some case studies of Bioconductor package vignette conversions to Jupyter Notebook format. As already pointed out, the process of conversion is limited by the pandoc's ability to handle user-defined environments and commands in LaTeX, therefore some preprocessing of TeX files is required prior to conversion with pandoc. Thus if you are using a custom-written LaTeX style file, you will have to check if all of your LaTeX commands and environments are rendered by pandoc.
 
 
-Note that in pandoc there are a number of useful options that can help the vignette author avoid unnecessary work. For example, to get rid of the so called header identifiers, additional tags in braces appended to some section headers in TeX $\Rightarrow$ Markdown conversion, use `markdown_github` flavor or the `-header_attributes` ("*minus* header attributes") extension with pandoc markdown, i.e.
+Note that in pandoc there are a number of useful options that can help the vignette author avoid unnecessary work. For example, to get rid of the so called header identifiers, additional tags in braces appended to some section headers during TeX $\rightarrow$ Markdown conversion, use `markdown_github` flavor or the `-header_attributes` ("*minus* header attributes") extension with pandoc markdown, i.e.
 
 ```
 $ pandoc --to=markdown_github+tex_math_dollars vignette.tex -o vignette.md
@@ -191,13 +203,26 @@ $ pandoc -s --toc --to=markdown-header_attributes vignette.tex -o vignette.md
 The function `render` from the **rmarkdown** package uses pandoc as well. Hence pandoc extensions can be specified in `md_document(variant = ...)` function as discussed in section 3.1.
 
 # Current Limitations
-## Docker Bugs
+## Docker Idiosyncrasies
+In theory, Docker is a great tool for cross-platform software distribution. 
+However, currently there are some usability issues with Docker that have to be considered. On Mac OS and Windows **Docker client** is shipped with [**VirtualBox**](https://www.virtualbox.org/), which emulates a Linux kernel for the Docker engine. The Docker client and VirtualBox are not always perfectly synchronized and sometimes VirtualBox has to be manually activated or restarted in order to "kick-start" Docker on Windows or Mac OS. 
 
+
+Another unresolved issue is the inability to abort a pull or push in an intuitive manner (see [issue #6928](https://github.com/docker/docker/issues/6928)). **Warning**: pressing Ctrl + c does not interrupt an active pull or push process, but only terminates the Docker output, while the process is still lurking in the background. If you pressed Ctrl + C to abort a frozen pull process, you will have to restart the Docker daemon with a command specific to your OS to resume the pull (on Linux: `sudo service docker restart`; on Macs: `docker-machine kill default`).
 
 ## R Kernel Issues
+In R markdown vignettes the figure's width and height are set in hidden from user code chunks. These figure dimension parameters are important for keeping the unit aspect ratio and they can be extracted when processing the Rmd file. However, currently in IPython notebook these will have to be incroporated as explicit figure size declarations:
+
+```{r plot, eval = FALSE}
+IRkernel::set_plot_options(width = 5, height = 4)
+```
+
+# Summary and Conclusion
+R markdown documentation can be easily converted to Jupyter notebook format. The conversion of TeX files is less trivial and an intermediate conversion to Markdown with pandoc is necessary. The generated Jupyter notebooks are packaged into Docker images and pushed to Docker Hub.
 
 
-## Outlook
+As mentioned in "Current Limitations" section, the user may experience some issues with Docker. The ultimate solution would be to provide a live notebook server similar to what [**rackspace**](http://www.rackspace.com) did for Nature IPython notebook demonstration (link to the blog article [**here**](https://developer.rackspace.com/blog/how-did-we-serve-more-than-20000-ipython-notebooks-for-nature/)).
+
 
 
 
