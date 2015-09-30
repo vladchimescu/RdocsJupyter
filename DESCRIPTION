@@ -5,4 +5,5 @@ Version: 0.99.0
 Author: Vladislav Kim <vkim@embl.de>
 Maintainer: Vladislav Kim <vkim@embl.de>
 Depends: R (>= 3.0.1)
+Imports: tools
 License: GNU General Public License
