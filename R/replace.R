@@ -1,7 +1,7 @@
 ## replace LaTeX environments (usually have to be removed
 ## or simplified)
 replaceEnv <- function(filename) {
-  text <- readLines(file.path(getwd(), filename))
+  text <- readLines(file.path(filename))
   text <- gsub("\\usepackage{Sweave}", "\\usepackage{listings}\n",
                text, fixed=TRUE)
   text <- gsub("\\usepackage{alltt}", "\\usepackage{listings}\n", text, fixed=TRUE)
@@ -34,7 +34,7 @@ replaceEnv <- function(filename) {
 
 ## replace Bioconductor.sty macros (such as \Biocpkg{})
 replaceMacros <- function(filename) {
-  text <- readLines(file.path(getwd(), filename))
+  text <- readLines(file.path(filename))
   # replace macros
   text <- gsub("\\R{}~", "\\emph{R} ", text, fixed=TRUE)
   text <- gsub("\\R~", "R ", text, fixed=TRUE)
@@ -56,7 +56,7 @@ replaceMacros <- function(filename) {
 
 ## remove all figures
 removeFigures <- function(filename) {
-  text <- readLines(file.path(getwd(), filename))
+  text <- readLines(file.path(filename))
   text <- deleteBetween("\\\\begin\\{figure\\}", "\\\\end\\{figure\\}", text)
   # text <- gsub("(\\\\begin\\{figure\\})(.*?)(\\\\end\\{figure\\})", "", text)
   text <- gsub("\\incfig((.|\n)*+)", "\\emph\\{Caption:", text, perl = TRUE)
