@@ -1,2 +1,4 @@
-export("processTex")
-export("produceDockerfile")
+export("process.vignette")
+export("produce.dockerfile")
+export("extract.fig.params")
+export("get.deps.from.description")

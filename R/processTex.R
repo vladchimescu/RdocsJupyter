@@ -46,7 +46,29 @@ render.markdown <- function(filename) {
 } ## end render.markdown
 
 
-
+#' @title Extract figure parameters from code chunks.
+#' @description \code{extract.fig.params} extracts figure width and height from
+#' code chunks
+#' @param filename File name of the vignette. Absolute path has to be prepended
+#' if the document is not in R working directory
+#' @param type Vignette type. Valid values are "Rmd" for R markdown and "Rnw"
+#' for Sweave and knitr vignette
+#' @details The function extracts figure parameters from code chunks and 
+#' places these figure options right before the code chunk, from which the
+#' figure dimensions were read out. 
+#' \cr\cr Suppose, there is a code chunk
+#' in which a figure is plotted and the figure's width and height are set as follows:
+#' \cr\cr\code{<<someplot, fig.width=6, fig.height=4.5>>=\cr
+#' plot(x, f(x))\cr
+#' @@ }
+#' \cr\cr The function \code{extract.fig.params} would extract width and height
+#' and pass them to \code{set_plot_options} function from package \pkg{IRkernel}.
+#' Thus the former code chunk will be preceded by the following : \cr\cr
+#' \code{<<>>=\cr
+#' IRkernel::set_plot_options(width = 6, height = 4.5)\cr
+#' @@}
+#' \cr\cr The purpose of this code chunk is to make sure the aspect ratio of the
+#' figure is communicated to Jupyter Notebook via R kernel (\pkg{IRkernel})
 extract.fig.params <- function(filename, type) {
   if(type == "Rmd") {
     if (length(grep("IRkernel", readLines(filename), fixed = TRUE)) == 0) {
@@ -163,6 +185,38 @@ run.pandoc <- function(filename) {
   } ## end else (!pandoc.installed)
   
 } ## end run.pandoc() function
+
+#' @title Convert vignettes into Jupyter notebooks.
+#' @description \code{process.vignette} converts R markdown, Sweave and knitr vignettes
+#' into Jupyter notebook format and automatically produces a Dockerfile for running
+#' the notebook in Docker virtual environment.
+#' @param filename  File name of the R documentation (.Rmd or .Rnw) to be converted. 
+#' Absolute path has to be prepended if the file is not in the working directory.
+#' The file extension must be included in the file name.
+#' @details The function expects as input the file name of the .Rmd or .Rnw documentation 
+#' that needs to be converted to Jupyter notebook format. Absolute path has to be prepended
+#'  if the file is not in the working directory.
+#' The file extension must be included in the file name.
+#' \cr\cr R markdown (.Rmd) vignettes are first rendered to Markdown Github and 
+#' subsequently converted with the \strong{notedown}
+#' command line utility to .ipynb format.
+#' The produced Jupyter notebook is scanned for dependencies using \code{get.dependencies}
+#' function and an R script \emph{packages.R} is produced. \emph{packages.R} and the
+#' Jupyter notebook are used to make a Docker image for the vignette.
+#' \cr\cr Note, however, that the Docker image has to be built first from the produced
+#' Dockerfile. All generated files, i.e. Jupyter notebook, packages.R and Dockerfile 
+#' are written in the \strong{same} directory where the input file is located.
+#' In order to build a Docker image for running the vignette you don't need 
+#' IPython Notebook installed on your machine. If you installed Docker,
+#' simply run in command line \cr\cr
+#' \code{$ docker build -t imagename .} 
+#'  \cr\cr in the same directory as the Dockerfile. After building the Docker image for
+#' your Jupyter notebook, check the operating system-specific commands for running 
+#' Jupyter notebooks in Docker containers on the following
+#'  web page \url{https://hub.docker.com/r/vladkim/rnaseq/}
+#'  \cr\cr Similarly, Sweave and knitr vignettes are compiled to a TeX file, which
+#'  is in turn converted to Markdown with \strong{pandoc}. The remaining processing
+#'  steps are identical to those for R markdown vignettes.
 
 process.vignette <- function(filename) {
   if(file_ext(filename) == "Rmd") {
