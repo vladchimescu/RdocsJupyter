@@ -1,17 +1,17 @@
 process.tex <- function(filename) {
-  replaceEnv(filename)
-  replaceMacros(filename)
-  removeFigures(filename)
+  replace.environment(filename)
+  replace.macros(filename)
+  remove.figures(filename)
   
 } ## end process.tex()
 
 knit.vignette <- function(filename) {
-  ## need to add some exception handling
+  ## works for now but this is dangerous...
   opts_chunk$set(eval = TRUE)
   ## Also need to catch that warning from knitr (twice)
-  knit(filename)
+  suppressWarnings(knit(filename))
   opts_chunk$set(results = "hide", highlight = FALSE, eval = FALSE)
-  knit(filename)
+  suppressWarnings(knit(filename))
   if(dirname(filename) != ".") {
     system2('mv', paste(getwd(), '/', 
                         sub("^([^.]*).*", "\\1", basename(filename)), 
@@ -20,25 +20,32 @@ knit.vignette <- function(filename) {
 } ## end knit.vignette()
 
 sweave.vignette <- function(filename) {
-  ## need to add some error handling
-  options(prompt=" ", continue=" ")
-  Sweave(filename, eval = TRUE)
-  Sweave(filename, eval = FALSE)
-  if(dirname(filename) != ".") {
-    system2('mv', paste(getwd(), '/', 
-                        sub("^([^.]*).*", "\\1", basename(filename)), 
-                        ".tex ", dirname(filename), "/", sep = ""))
-  } ## end if(dirname(filename) != ".")
-  options(prompt = "> ", continue = "+ ")
+  ## not sure if it's such a good idea to use try on Sweave...
+    options(prompt=" ", continue=" ")
+    try(Sweave(filename, eval = TRUE))
+    try(Sweave(filename, eval = FALSE))
+
+    if(dirname(filename) != ".") {
+      system2('mv', paste(getwd(), '/', 
+                          sub("^([^.]*).*", "\\1", basename(filename)), 
+                          ".tex ", dirname(filename), "/", sep = ""))
+    } ## end if(dirname(filename) != ".")
+    ## this is dangerous...
+    options(prompt = "> ", continue = "+ ")
 } ## end sweave.vignette
 
-render.markdown(filename) {
-  ## need to add some error handling
+render.markdown <- function(filename) {
+  tryCatch(
+  {## need to add some error handling
   opts_chunk$set(eval = TRUE)
   render(filename, md_document(variant = "markdown_github+tex_math_dollars"))
   opts_chunk$set(eval = FALSE)
   render(filename, md_document(variant = "markdown_github+tex_math_dollars"))
+  }, error = function(e) message("Error: function rmarkdown::render() exited with a non-zero status"),
+  warning = function(w) {})
 } ## end render.markdown
+
+
 
 extract.fig.params <- function(filename, type) {
   if(type == "Rmd") {
@@ -102,7 +109,12 @@ run.notedown <- function(filename) {
     vignette <- paste(out_name, ".ipynb", sep = "")
     # produce Dockerfile and packages.R script
     produce.dockerfile(vignette)
-    message(paste("Produced Dockerfile and packages.R in", dirname(filename)))
+    if(dirname(filename) == ".") {
+      message(paste("Produced Dockerfile and packages.R in", getwd()))
+    }
+    else {
+      message(paste("Produced Dockerfile and packages.R in", dirname(filename)))
+    }
   } ## end if(notedown.status)
   
   
@@ -128,7 +140,6 @@ run.pandoc <- function(filename) {
       in_name <- paste(dirname(filename), "/",
                        sub("^([^.]*).*", "\\1", basename(filename)), 
                        ".tex", sep = "")
-      print(in_name)
     }
     
     if(system2('pandoc', paste(' -s --toc --to=markdown_github+tex_math_dollars ',
