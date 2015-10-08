@@ -1,5 +1,5 @@
-## replace LaTeX environments (usually have to be removed
-## or simplified)
+## replace LaTeX environments 
+
 replaceEnv <- function(filename) {
   text <- readLines(file.path(filename))
   text <- gsub("\\usepackage{Sweave}", "\\usepackage{listings}\n",

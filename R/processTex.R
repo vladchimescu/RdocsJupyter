@@ -1,11 +1,70 @@
-processTex <- function(filename) {
+process.tex <- function(filename) {
   replaceEnv(filename)
   replaceMacros(filename)
   removeFigures(filename)
   
-}
+} ## end process.tex()
 
-runNotedown <- function(filename) {
+knit.vignette <- function(filename) {
+  ## need to add some exception handling
+  opts_chunk$set(eval = TRUE)
+  ## Also need to catch that warning from knitr (twice)
+  knit(filename)
+  opts_chunk$set(results = "hide", highlight = FALSE, eval = FALSE)
+  knit(filename)
+  if(dirname(filename) != ".") {
+    system2('mv', paste(getwd(), '/', 
+                        sub("^([^.]*).*", "\\1", basename(filename)), 
+                        ".tex ", dirname(filename), "/", sep = ""))
+  } ## end if(dirname(filename != "."))
+} ## end knit.vignette()
+
+sweave.vignette <- function(filename) {
+  ## need to add some error handling
+  options(prompt=" ", continue=" ")
+  Sweave(filename, eval = TRUE)
+  Sweave(filename, eval = FALSE)
+  if(dirname(filename) != ".") {
+    system2('mv', paste(getwd(), '/', 
+                        sub("^([^.]*).*", "\\1", basename(filename)), 
+                        ".tex ", dirname(filename), "/", sep = ""))
+  } ## end if(dirname(filename) != ".")
+  options(prompt = "> ", continue = "+ ")
+} ## end sweave.vignette
+
+render.markdown(filename) {
+  ## need to add some error handling
+  opts_chunk$set(eval = TRUE)
+  render(filename, md_document(variant = "markdown_github+tex_math_dollars"))
+  opts_chunk$set(eval = FALSE)
+  render(filename, md_document(variant = "markdown_github+tex_math_dollars"))
+} ## end render.markdown
+
+extract.fig.params <- function(filename, type) {
+  if(type == "Rmd") {
+    if (length(grep("IRkernel", readLines(filename), fixed = TRUE)) == 0) {
+      text <- gsub("(^[\t >]*```+\\s*\\{[.]?)([a-zA-Z]+.*)(fig+.*)\\}\\s*$", 
+                   "IRkernel::set_plot_options\\(\\2\\3\\)\n\\1\\2\\3\\}", 
+                   readLines(filename))
+      text <- gsub("(IRkernel::set_plot_options\\()([a-zA-Z]+.*)(width+.*|height+.*)fig.(height+.*|width+.*)\\)", 
+                   "```{r}\n\\1\\3\\4\\)\n```", text)
+      writeLines(text, con = filename, sep = "\n")
+    } ## end if (length(...))
+  } ## end if (type == "Rmd")
+  
+  else {
+    if (length(grep("IRkernel", readLines(filename), fixed = TRUE)) == 0) {
+      text <- gsub("(^\\s*<<)(.*)(fig+.*)>>=.*$", 
+                   "IRkernel::set_plot_options\\(\\2\\3\\)\n\\1\\2\\3>>=",
+                   readLines(filename))
+      text <- gsub("(IRkernel::set_plot_options\\()([a-zA-Z]+.*)(width+.*|height+.*)fig.(height+.*|width+.*)\\)", 
+                   "<<\\3\\4>>=\n\\1\\3\\4\\)\n@", text)
+      writeLines(text, con = filename, sep = "\n")
+    } ## end if(length...)
+  } ## end else 
+} ## end extract.fig.params() function
+
+run.notedown <- function(filename) {
   ## check if notedown is installed
   notedown.installed <- system2('notedown', '--version', stdout = FALSE)==0
   if(notedown.installed) {
@@ -38,14 +97,12 @@ runNotedown <- function(filename) {
       } ## end else (dirname != ".")
     else {
       message("Error: notedown exited with non-zero status")
-    } ## end else (!notedown.installed)
+    } ## end else (notedown not successful)
     
     vignette <- paste(out_name, ".ipynb", sep = "")
     # produce Dockerfile and packages.R script
-    produceDockerfile(vignette)
+    produce.dockerfile(vignette)
     message(paste("Produced Dockerfile and packages.R in", dirname(filename)))
-    ## check if the Dockerfile was produced
-    
   } ## end if(notedown.status)
   
   
@@ -53,9 +110,9 @@ runNotedown <- function(filename) {
     message("notedown executable not found.\n You need notedown utility for md -> ipynb conversion")
   } ## end else ...
   
-} ## end runNotedown function
+} ## end run.notedown() function
 
-runPandoc <- function(filename) {
+run.pandoc <- function(filename) {
   pandoc.installed <- system2('pandoc', '--version', stdout = FALSE) == 0
   if(pandoc.installed) {
     if (dirname(filename) == ".") {
@@ -94,46 +151,29 @@ runPandoc <- function(filename) {
     message("pandoc executable not found. For TeX -> Md conversion pandoc has to be installed!")
   } ## end else (!pandoc.installed)
   
-} ## end runPandoc function
+} ## end run.pandoc() function
 
-processVignette <- function(filename) {
+process.vignette <- function(filename) {
   if(file_ext(filename) == "Rmd") {
-    ## extract all code chunk headers with figure dimension settings
-    ## and put them in comments
-    if (length(grep("IRkernel", readLines(filename), fixed = TRUE)) == 0) {
-      text <- gsub("(^[\t >]*```+\\s*\\{[.]?)([a-zA-Z]+.*)(fig+.*)\\}\\s*$", 
-                   "IRkernel::set_plot_options\\(\\2\\3\\)\n\\1\\2\\3\\}", 
-                   readLines(filename))
-      text <- gsub("(IRkernel::set_plot_options\\()([a-zA-Z]+.*)(width+.*|height+.*)fig.(height+.*|width+.*)\\)", 
-                   "```{r}\n\\1\\3\\4\\)\n```", text)
-      writeLines(text, con = filename, sep = "\n")
-    } ## end if (length(...))
     
-    opts_chunk$set(eval = TRUE)
-    render(filename, md_document(variant = "markdown_github+tex_math_dollars"))
-    opts_chunk$set(eval = FALSE)
-    render(filename, md_document(variant = "markdown_github+tex_math_dollars"))
+    ## extract figure parameters from code chunks
+    extract.fig.params(filename, "Rmd")
+    
+    ## render Markdown file
+    render.markdown(filename)
     
     ## use notedown utility to convert the md file to ipynb
-    runNotedown(filename)
+    run.notedown(filename)
     
   } ## end if (Rmd)
   
   else if(file_ext(filename) == "Rnw") {
-    ## extract all code chunk headers with figure dimension settings
-    ## and put them in comments
-    if (length(grep("IRkernel", readLines(filename), fixed = TRUE)) == 0) {
-      text <- gsub("(^\\s*<<)(.*)(fig+.*)>>=.*$", 
-                   "IRkernel::set_plot_options\\(\\2\\3\\)\n\\1\\2\\3>>=",
-                   readLines(filename))
-      text <- gsub("(IRkernel::set_plot_options\\()([a-zA-Z]+.*)(width+.*|height+.*)fig.(height+.*|width+.*)\\)", 
-                   "<<\\3\\4>>=\n\\1\\3\\4\\)\n@", text)
-      writeLines(text, con = filename, sep = "\n")
-    } ## end if(length...)
+    
+    extract.fig.params(filename, "Rnw")
     
     ## here process Sweave and knitr vignettes separately
     repeat {
-    vignette_type <- readline("Is this a knitr or Sweave vignette?\nknitr  --- enter 1\nSweave --- enter 2\n ")
+    vignette_type <- readline("Is this a knitr or Sweave vignette? \nknitr  --- enter 1\nSweave --- enter 2\n ")
     if(vignette_type == 1 || vignette_type == 2) {
       break
     }
@@ -141,44 +181,27 @@ processVignette <- function(filename) {
     } ## end repeat
     
     if(as.character(vignette_type) == 1) {
-      opts_chunk$set(eval = TRUE)
-      knit(filename)
-      opts_chunk$set(results = "hide", highlight = FALSE, eval = FALSE)
-      knit(filename)
-      if(dirname(filename) != ".") {
-        system2('mv', paste(getwd(), '/', 
-                          sub("^([^.]*).*", "\\1", basename(filename)), 
-                          ".tex ", dirname(filename), "/", sep = ""))
-      }
-
+      knit.vignette(filename)
     } ## end if (knitr)
     
     else if(as.character(vignette_type) == 2) {
-      # Sweave the vignette
-      options(prompt=" ", continue=" ")
-      Sweave(filename)
-      Sweave(filename, eval = FALSE)
-      if(dirname(filename) != ".") {
-        system2('mv', paste(getwd(), '/', 
-                          sub("^([^.]*).*", "\\1", basename(filename)), 
-                          ".tex ", dirname(filename), "/", sep = ""))
-      }
-      options(prompt = "> ", continue = "+ ")
+      ## Sweave the vignette
+      sweave.vignette(filename)
       
     } ## end else if (Sweave)
     
     ## after generating a TeX file, process it
-    processTex(paste(dirname(filename), "/",
+    process.tex(paste(dirname(filename), "/",
                      sub("^([^.]*).*", "\\1", basename(filename)), ".tex", sep = ""))
-    runPandoc(filename)    
+    run.pandoc(filename)    
     
     ## right now this is not strictly speaking right
-    runNotedown(filename)
+    run.notedown(filename)
     
     
   } ## end else if (Rnw)
   
   else {
     message("Only Rmd and Rnw formats are supported!")
-  }
-}
+  } ## end else (if !"Rmd" && !"Rnw")
+} ## end process.vignette()
