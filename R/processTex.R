@@ -35,14 +35,9 @@ sweave.vignette <- function(filename) {
 } ## end sweave.vignette
 
 render.markdown <- function(filename) {
-  tryCatch(
-  {## need to add some error handling
-  opts_chunk$set(eval = TRUE)
   render(filename, md_document(variant = "markdown_github+tex_math_dollars"))
   opts_chunk$set(eval = FALSE)
   render(filename, md_document(variant = "markdown_github+tex_math_dollars"))
-  }, error = function(e) message("Error: function rmarkdown::render() exited with a non-zero status"),
-  warning = function(w) {})
 } ## end render.markdown
 
 
