@@ -35,8 +35,7 @@ sweave.vignette <- function(filename) {
 } ## end sweave.vignette
 
 render.markdown <- function(filename) {
-  render(filename, md_document(variant = "markdown_github+tex_math_dollars"))
-  opts_chunk$set(eval = FALSE)
+  opts_chunk$set(results = "hide", fig.show = "hide")
   render(filename, md_document(variant = "markdown_github+tex_math_dollars"))
 } ## end render.markdown
 
