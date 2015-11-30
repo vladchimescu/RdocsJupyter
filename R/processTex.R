@@ -70,7 +70,7 @@ extract.fig.params <- function(filename, type) {
                    "IRkernel::set_plot_options\\(\\2\\3\\)\n\\1\\2\\3\\}", 
                    readLines(filename))
       text <- gsub("(IRkernel::set_plot_options\\()([a-zA-Z]+.*)(width+.*|height+.*)fig.(height+.*|width+.*)\\)", 
-                   "```{r}\n\\1\\3\\4\\)\n```", text)
+                   "```{r, eval=FALSE}\n\\1\\3\\4\\)\n```", text)
       writeLines(text, con = filename, sep = "\n")
     } ## end if (length(...))
   } ## end if (type == "Rmd")

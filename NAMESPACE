@@ -2,3 +2,7 @@ export("process.vignette")
 export("produce.dockerfile")
 export("extract.fig.params")
 export("get.deps.from.description")
+importFrom(tools, file_ext)
+import(knitr)
+import(rmarkdown)
+
